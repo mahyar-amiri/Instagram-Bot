@@ -1,0 +1,21 @@
+{{user.name}} * {{user.is_verified}} * {{user.pass_word}}
+
+<form method="post">
+    {% csrf_token %}
+
+    <input type="text" name="username" placeholder="Username" id="id_username" /> {% for error in form.username.errors %}
+    <p>{{error}}</p>
+    {% endfor %}
+
+    <br />
+
+    <input type="password" name="pass_word" placeholder="Password" id="id_pass_word" /> {% for error in form.password.errors %}
+    <p>{{error}}</p>
+    {% endfor %} {% if form.non_field_errors %} {% for error in form.non_field_errors %}
+    <p>{{error}}</p>
+    {% endfor %} {% endif %}
+
+    <br />
+
+    <button type="submit" class="btn btn-primary btn-block">ورود</button>
+</form>
