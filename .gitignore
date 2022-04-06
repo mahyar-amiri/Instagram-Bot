@@ -5,8 +5,6 @@
 **/migrations
 **/__pycache__
 media/
-static/*
-templates/*
 
 # files
 db.sqlite3
