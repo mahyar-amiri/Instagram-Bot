@@ -1,0 +1,16 @@
+# ignore .env SECRETS
+.env
+
+# folders
+**/migrations
+**/__pycache__
+media/
+static/*
+templates/*
+
+# files
+db.sqlite3
+TODO.md
+
+# extensions
+*.pyc
