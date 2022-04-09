@@ -1,6 +1,8 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from decouple import config
+import instagrapi
+from instagrapi import Client
 
 
 chat_id = config('CHAT_ID')
@@ -9,25 +11,17 @@ TOKEN = config('TOKEN')
 bot = telebot.TeleBot(TOKEN)
 
 client = Client()
-client.login(config('USERNAME'),  config('PASSWORD'))
 
+is_authenticated = False
+while not is_authenticated:
+    is_authenticated = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
 
-# bot.send_message(chat_id, 'Hello World')
-# def instagram_view(request):
-#     if request.user.is_authenticated:
-#         user = request.user
-
-#         c = Client()
-#         c.login(user.username, user.pass_word)
+bot.send_message(chat_id, f"Hello {config('IG_USERNAME')}")
 
 #         user_id = c.user_id_from_username('_ielts9')
 #         stories = c.user_stories(user_id, 2)
-
 #         c.logout()
 
-#         context = {'stories': stories}
-
-#         return render(request, 'instagram.html', context=context)
 
 def user_markup():
     markup = InlineKeyboardMarkup()
@@ -57,7 +51,14 @@ def bot_login(message):
 
 @bot.message_handler(func=lambda message: True)
 def answer_message(message):
-    bot.send_message(message.chat.id, message.text, reply_markup=user_markup())
+
+    try:
+        user_id = client.user_id_from_username(message.text)
+        bot.reply_to(message, f'User: {message.text}\nid: {user_id}', reply_markup=user_markup())
+    except instagrapi.exceptions.UserNotFound as e:
+        bot.reply_to(message, 'User not found :(')
+
+    # bot.send_message(message.chat.id, message.text)
 
 #     is_waiting_for_login = cursor.execute(f'SELECT WAITING_FOR_LOGIN FROM Users WHERE TG_ID = {message.chat.id};')
 
