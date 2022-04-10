@@ -60,8 +60,6 @@ def answer_message(message):
 
     # bot.send_message(message.chat.id, message.text)
 
-#     is_waiting_for_login = cursor.execute(f'SELECT WAITING_FOR_LOGIN FROM Users WHERE TG_ID = {message.chat.id};')
-
 #     if list(is_waiting_for_login)[0][0]:
 #         userpass = message.text
 
