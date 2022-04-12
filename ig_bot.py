@@ -18,10 +18,6 @@ while not is_authenticated:
 
 bot.send_message(chat_id, f"Hello {config('IG_USERNAME')}")
 
-#         user_id = c.user_id_from_username('_ielts9')
-#         stories = c.user_stories(user_id, 2)
-#         c.logout()
-
 
 def user_markup():
     markup = InlineKeyboardMarkup()
@@ -35,6 +31,10 @@ def user_markup():
 def callback_query(call):
     if call.data == "cb_story":
         bot.answer_callback_query(call.id, "Answer is story")
+
+#         user_id = c.user_id_from_username('_ielts9')
+#         stories = c.user_stories(user_id, 2)
+
     elif call.data == "cb_post":
         bot.answer_callback_query(call.id, "Answer is post")
 
@@ -53,25 +53,11 @@ def bot_login(message):
 def answer_message(message):
 
     try:
-        user_id = client.user_id_from_username(message.text)
-        bot.reply_to(message, f'User: {message.text}\nid: {user_id}', reply_markup=user_markup())
+        user_info = client.user_info_by_username(message.text)
+        bot.send_photo(message.chat.id, user_info.profile_pic_url,
+                       f'Username: {user_info.username}\n\nFullName: {user_info.full_name}\n\nBiography: {user_info.biography}\n\nPosts: {user_info.media_count}\n\nFollowers: {user_info.follower_count}\n\nFollowings: {user_info.following_count}\n\n#{user_info.pk}', reply_markup=user_markup())
     except instagrapi.exceptions.UserNotFound as e:
         bot.reply_to(message, 'User not found :(')
-
-    # bot.send_message(message.chat.id, message.text)
-
-#     is_waiting_for_login = cursor.execute(f'SELECT WAITING_FOR_LOGIN FROM Users WHERE TG_ID = {message.chat.id};')
-
-#     if list(is_waiting_for_login)[0][0]:
-#         userpass = message.text
-
-#         cursor.execute(f'UPDATE Users SET WAITING_FOR_LOGIN = 0 WHERE TG_ID = {message.chat.id};')
-#         connection.commit()
-
-#         bot.send_message(message.chat.id, f'...{userpass}...')
-
-#     else:
-#         bot.send_message(message.chat.id, message.text)
 
 
 bot.infinity_polling()
