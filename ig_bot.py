@@ -27,6 +27,8 @@ EMOJI = {
     'video': '🎞️',
     'photo': '🖼️',
     'notsupport': '❌',
+    'download': '📥',
+    'upload': '📤',
 }
 
 is_authenticated = False
@@ -83,7 +85,7 @@ def user_story_markup(stories):
             c += 1
         markup.add(*last_row, row_width=count % 5)
 
-    markup.add(InlineKeyboardButton('Get all', callback_data='cb_story_all'))
+    markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_story_all'))
 
     return markup
 
@@ -113,9 +115,9 @@ def callback_query(call):
 
         story = stories[number]
         if story.media_type == 1:
-            bot.send_photo(call.from_user.id, story.thumbnail_url)
+            bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{user_id}')
         elif story.media_type == 2:
-            bot.send_video(call.from_user.id, story.video_url)
+            bot.send_video(call.from_user.id, story.video_url, caption=f'Story Number: {number+1}\n#u{user_id}')
         else:
             bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
@@ -126,11 +128,11 @@ def callback_query(call):
         user_id = caption[caption.find('#u')+2:]
         stories = client.user_stories(user_id)
 
-        for story in stories:
+        for number, story in enumerate(stories):
             if story.media_type == 1:
-                bot.send_photo(call.from_user.id, story.thumbnail_url)
+                bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{user_id}')
             elif story.media_type == 2:
-                bot.send_video(call.from_user.id, story.video_url)
+                bot.send_video(call.from_user.id, story.video_url, caption=f'Story Number: {number+1}\n#u{user_id}')
             else:
                 bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
@@ -170,4 +172,4 @@ def answer_message(message):
         bot.reply_to(message, 'User not found :(')
 
 
-bot.infinity_polling()
+bot.infinity_polling(skip_pending=True)
