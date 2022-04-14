@@ -29,6 +29,7 @@ EMOJI = {
     'notsupport': '❌',
     'download': '📥',
     'upload': '📤',
+    'back': '🔙',
 }
 
 is_authenticated = False
@@ -39,7 +40,8 @@ while not is_authenticated:
 bot.send_message(chat_id, f"Hello {config('IG_USERNAME')}")
 
 
-def user_info_markup(username):
+def user_info_markup(pk):
+    username = client.user_info(pk).username
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(InlineKeyboardButton('Story', callback_data='cb_story'),
@@ -86,16 +88,19 @@ def user_story_markup(stories):
         markup.add(*last_row, row_width=count % 5)
 
     markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_story_all'))
+    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_story_back'))
 
     return markup
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
+
+    caption = call.message.caption
+    user_id = caption[caption.find('#u')+2:]
+
     if call.data == 'cb_story':
 
-        caption = call.message.caption
-        user_id = caption[caption.find('#u')+2:]
         stories = client.user_stories(user_id)
 
         if len(stories) == 0:
@@ -104,13 +109,15 @@ def callback_query(call):
             bot.answer_callback_query(call.id, 'Select Story')
             bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_story_markup(stories))
 
+    elif call.data == 'cb_story_back':
+        bot.answer_callback_query(call.id, 'Back to user info!')
+        bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_info_markup(user_id))
+
     elif call.data.startswith('cb_story_dl_'):
         number = int(call.data.replace('cb_story_dl_', ''))
 
         bot.answer_callback_query(call.id, f'Get Story {number+1}!')
 
-        caption = call.message.caption
-        user_id = caption[caption.find('#u')+2:]
         stories = client.user_stories(user_id)
 
         story = stories[number]
@@ -124,8 +131,6 @@ def callback_query(call):
     elif call.data == 'cb_story_all':
         bot.answer_callback_query(call.id, 'Get all Stories!')
 
-        caption = call.message.caption
-        user_id = caption[caption.find('#u')+2:]
         stories = client.user_stories(user_id)
 
         for number, story in enumerate(stories):
@@ -167,7 +172,7 @@ def answer_message(message):
                        {EMOJI['following']} Followings: {user_info.following_count:,}
                        {EMOJI['url']} URL: {user_info.external_url}
                        #u{user_info.pk}
-                       '''.replace('                       ', '\n'), reply_markup=user_info_markup(user_info.username))
+                       '''.replace('                       ', '\n'), reply_markup=user_info_markup(user_info.pk))
     except instagrapi.exceptions.UserNotFound as e:
         bot.reply_to(message, 'User not found :(')
 
