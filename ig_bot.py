@@ -151,7 +151,6 @@ def default_query(inline_query):
     try:
         try:
             user_info = client.user_info_by_username(inline_query.query)
-            # r = types.InlineQueryResultArticle('1', f'{user_info.username}', input_message_content=types.InputTextMessageContent(f'{user_info.username}'), description=f'{user_info.full_name}', thumb_url=f'{user_info.profile_pic_url}')
             r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=f'{user_info.username}', description=f'{user_info.full_name}',
                                              caption=f'''
                                              {EMOJI['username']} Username: {user_info.username}
@@ -168,14 +167,7 @@ def default_query(inline_query):
 
         except instagrapi.exceptions.UserNotFound as e:
             r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent(inline_query.query))
-            # user_info = None
-
-        # if user_info is not None:
-        #     r = types.InlineQueryResultArticle('1', f'{user_info.username}', input_message_content=types.InputTextMessageContent(f'{user_info.username}'), description=f'{user_info.full_name}', thumb_url=f'{user_info.profile_pic_url}')
-
-        # else:
-        #     r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent('Not Found'))
-
+            
         bot.answer_inline_query(inline_query.id, [r])
 
     except Exception as e:
