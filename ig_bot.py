@@ -1,4 +1,5 @@
 import telebot
+from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from decouple import config
 import instagrapi
@@ -145,17 +146,53 @@ def callback_query(call):
         bot.answer_callback_query(call.id, 'Select Post')
 
 
-@bot.message_handler(commands=['start', 'help'])
+@bot.inline_handler(lambda query: len(query.query) != 0)
+def default_query(inline_query):
+    try:
+        try:
+            user_info = client.user_info_by_username(inline_query.query)
+            # r = types.InlineQueryResultArticle('1', f'{user_info.username}', input_message_content=types.InputTextMessageContent(f'{user_info.username}'), description=f'{user_info.full_name}', thumb_url=f'{user_info.profile_pic_url}')
+            r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=f'{user_info.username}', description=f'{user_info.full_name}',
+                                             caption=f'''
+                                             {EMOJI['username']} Username: {user_info.username}
+                                             {EMOJI['name']} FullName: {user_info.full_name}
+                                             {EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}
+                                             {EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}
+                                             {EMOJI['bio']} Biography: {user_info.biography}
+                                             {EMOJI['post']} Posts: {user_info.media_count}
+                                             {EMOJI['follower']} Followers: {user_info.follower_count:,}
+                                             {EMOJI['following']} Followings: {user_info.following_count:,}
+                                             {EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}
+                                             #u{user_info.pk}
+                                             '''.replace('                                             ', '\n'))
+
+        except instagrapi.exceptions.UserNotFound as e:
+            r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent(inline_query.query))
+            # user_info = None
+
+        # if user_info is not None:
+        #     r = types.InlineQueryResultArticle('1', f'{user_info.username}', input_message_content=types.InputTextMessageContent(f'{user_info.username}'), description=f'{user_info.full_name}', thumb_url=f'{user_info.profile_pic_url}')
+
+        # else:
+        #     r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent('Not Found'))
+
+        bot.answer_inline_query(inline_query.id, [r])
+
+    except Exception as e:
+        print(e)
+
+
+@ bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     bot.send_message(message.chat.id, 'Hello World')
 
 
-@bot.message_handler(commands=['login'])
+@ bot.message_handler(commands=['login'])
 def bot_login(message):
     bot.send_message(message.chat.id, 'Enter USERNAME & PASSWORD')
 
 
-@bot.message_handler(func=lambda message: True)
+@ bot.message_handler(func=lambda message: True)
 def answer_message(message):
 
     try:
@@ -170,7 +207,7 @@ def answer_message(message):
                        {EMOJI['post']} Posts: {user_info.media_count}
                        {EMOJI['follower']} Followers: {user_info.follower_count:,}
                        {EMOJI['following']} Followings: {user_info.following_count:,}
-                       {EMOJI['url']} URL: {user_info.external_url}
+                       {EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}
                        #u{user_info.pk}
                        '''.replace('                       ', '\n'), reply_markup=user_info_markup(user_info.pk))
     except instagrapi.exceptions.UserNotFound as e:
