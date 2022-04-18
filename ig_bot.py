@@ -94,6 +94,49 @@ def user_story_markup(stories):
     return markup
 
 
+def user_post_markup(posts):
+    markup = InlineKeyboardMarkup()
+
+    count = len(posts)
+    c = 0
+
+    for i in range(count//5):
+        row = []
+        for j in range(5):
+            media_type = ''
+            if posts[c].media_type == 1:
+                media_type = EMOJI['photo']
+            elif posts[c].media_type == 2:
+                media_type = EMOJI['video']
+            else:
+                media_type = EMOJI['notsupport']
+
+            row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
+            c += 1
+
+        markup.add(*row, row_width=5)
+
+    if count % 5 != 0:
+        last_row = []
+        for i in range(count % 5):
+            media_type = ''
+            if posts[c].media_type == 1:
+                media_type = EMOJI['photo']
+            elif posts[c].media_type == 2:
+                media_type = EMOJI['video']
+            else:
+                media_type = EMOJI['notsupport']
+
+            last_row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
+            c += 1
+        markup.add(*last_row, row_width=count % 5)
+
+    markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_post_all'))
+    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_post_back'))
+
+    return markup
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
 
@@ -143,14 +186,23 @@ def callback_query(call):
                 bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
     elif call.data == 'cb_post':
+
+        posts = client.user_medias(user_id)
+
+        if len(posts) == 0:
+            bot.answer_callback_query(call.id, 'User has no post!')
+        else:
+            bot.answer_callback_query(call.id, 'Select Post')
+            bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_post_markup(posts))
+
         bot.answer_callback_query(call.id, 'Select Post')
 
 
 @bot.inline_handler(lambda query: len(query.query) != 0)
-def default_query(inline_query):
+def inline_query(query):
     try:
         try:
-            user_info = client.user_info_by_username(inline_query.query)
+            user_info = client.user_info_by_username(query.query)
             r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=f'{user_info.username}', description=f'{user_info.full_name}',
                                              caption=f'''
                                              {EMOJI['username']} Username: {user_info.username}
@@ -166,9 +218,9 @@ def default_query(inline_query):
                                              '''.replace('                                             ', '\n'))
 
         except instagrapi.exceptions.UserNotFound as e:
-            r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent(inline_query.query))
-            
-        bot.answer_inline_query(inline_query.id, [r])
+            r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent(query.query))
+
+        bot.answer_inline_query(query.id, [r])
 
     except Exception as e:
         print(e)
@@ -181,7 +233,14 @@ def send_welcome(message):
 
 @ bot.message_handler(commands=['login'])
 def bot_login(message):
-    bot.send_message(message.chat.id, 'Enter USERNAME & PASSWORD')
+    is_logged_in = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
+    bot.send_message(message.chat.id, f"{'Logged in' if is_logged_in else 'Can not log in'}")
+
+
+@ bot.message_handler(commands=['logout'])
+def bot_login(message):
+    is_logged_out = client.logout()
+    bot.send_message(message.chat.id, f"{'Logged out' if is_logged_out else 'Can not log out'}")
 
 
 @ bot.message_handler(func=lambda message: True)
