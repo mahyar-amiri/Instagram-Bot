@@ -1,11 +1,13 @@
 import signal
+from time import sleep
+from decouple import config
+
 import telebot
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from decouple import config
+
 import instagrapi
 from instagrapi import Client
-
 
 chat_id = config('CHAT_ID')
 
@@ -36,7 +38,7 @@ EMOJI = {
 
 
 def handler(signum, frame):
-    res = input("Ctrl-c was pressed. Do you really want to exit? y/n ")
+    res = input("\n Ctrl-c was pressed. Do you really want to exit? y/n ")
     if res == 'y':
         client.logout()
         exit(1)
@@ -46,6 +48,7 @@ signal.signal(signal.SIGINT, handler)
 
 is_authenticated = False
 while not is_authenticated:
+    sleep(5)
     is_authenticated = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
 
 
