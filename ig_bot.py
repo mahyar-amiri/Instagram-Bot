@@ -1,3 +1,4 @@
+import signal
 import telebot
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -32,6 +33,16 @@ EMOJI = {
     'upload': '📤',
     'back': '🔙',
 }
+
+
+def handler(signum, frame):
+    res = input("Ctrl-c was pressed. Do you really want to exit? y/n ")
+    if res == 'y':
+        client.logout()
+        exit(1)
+
+
+signal.signal(signal.SIGINT, handler)
 
 is_authenticated = False
 while not is_authenticated:
@@ -231,16 +242,16 @@ def send_welcome(message):
     bot.send_message(message.chat.id, 'Hello World')
 
 
-@ bot.message_handler(commands=['login'])
-def bot_login(message):
-    is_logged_in = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
-    bot.send_message(message.chat.id, f"{'Logged in' if is_logged_in else 'Can not log in'}")
+# @ bot.message_handler(commands=['login'])
+# def bot_login(message):
+#     is_logged_in = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
+#     bot.send_message(message.chat.id, f"{'Logged in' if is_logged_in else 'Can not log in'}")
 
 
-@ bot.message_handler(commands=['logout'])
-def bot_login(message):
-    is_logged_out = client.logout()
-    bot.send_message(message.chat.id, f"{'Logged out' if is_logged_out else 'Can not log out'}")
+# @ bot.message_handler(commands=['logout'])
+# def bot_login(message):
+#     is_logged_out = client.logout()
+#     bot.send_message(message.chat.id, f"{'Logged out' if is_logged_out else 'Can not log out'}")
 
 
 @ bot.message_handler(func=lambda message: True)
