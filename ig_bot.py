@@ -37,14 +37,14 @@ EMOJI = {
 }
 
 
-def handler(signum, frame):
+def exit_handler(signum, frame):
     res = input("\n Ctrl-c was pressed. Do you really want to exit? y/n ")
     if res == 'y':
         client.logout()
         exit(1)
 
 
-signal.signal(signal.SIGINT, handler)
+signal.signal(signal.SIGINT, exit_handler)
 
 is_authenticated = False
 while not is_authenticated:
