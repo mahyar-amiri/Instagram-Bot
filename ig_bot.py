@@ -261,20 +261,23 @@ def send_welcome(message):
 def answer_message(message):
 
     try:
-        user_info = client.user_info_by_username(message.text)
-        bot.send_photo(message.chat.id, user_info.profile_pic_url,
-                       f'''
-                       {EMOJI['username']} Username: {user_info.username}
-                       {EMOJI['name']} FullName: {user_info.full_name}
-                       {EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}
-                       {EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}
-                       {EMOJI['bio']} Biography: {user_info.biography}
-                       {EMOJI['post']} Posts: {user_info.media_count}
-                       {EMOJI['follower']} Followers: {user_info.follower_count:,}
-                       {EMOJI['following']} Followings: {user_info.following_count:,}
-                       {EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}
-                       #u{user_info.pk}
-                       '''.replace('                       ', '\n'), reply_markup=user_info_markup(user_info.pk))
+        if message.text.startswith('eval '):
+            bot.reply_to(message, f'{eval(message.text[5:])}')
+        else:
+            user_info = client.user_info_by_username(message.text)
+            bot.send_photo(message.chat.id, user_info.profile_pic_url,
+                           f'''
+                        {EMOJI['username']} Username: {user_info.username}
+                        {EMOJI['name']} FullName: {user_info.full_name}
+                        {EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}
+                        {EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}
+                        {EMOJI['bio']} Biography: {user_info.biography}
+                        {EMOJI['post']} Posts: {user_info.media_count}
+                        {EMOJI['follower']} Followers: {user_info.follower_count:,}
+                        {EMOJI['following']} Followings: {user_info.following_count:,}
+                        {EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}
+                        #u{user_info.pk}
+                        '''.replace('                       ', '\n'), reply_markup=user_info_markup(user_info.pk))
     except instagrapi.exceptions.UserNotFound as e:
         bot.reply_to(message, 'User not found :(')
 
