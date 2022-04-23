@@ -2,8 +2,6 @@
 .env
 
 # folders
-**/migrations
-**/__pycache__
 media/
 
 # files
