@@ -30,6 +30,7 @@ EMOJI = {
     'url': '🌐',
     'video': '🎞️',
     'photo': '🖼️',
+    'album': '🖼️🎞️',
     'notsupport': '❌',
     'download': '📥',
     'upload': '📤',
@@ -103,7 +104,7 @@ def user_story_markup(stories):
         markup.add(*last_row, row_width=count % 5)
 
     markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_story_all'))
-    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_story_back'))
+    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
 
     return markup
 
@@ -122,6 +123,8 @@ def user_post_markup(posts):
                 media_type = EMOJI['photo']
             elif posts[c].media_type == 2:
                 media_type = EMOJI['video']
+            elif posts[c].media_type == 8:
+                media_type = EMOJI['album']
             else:
                 media_type = EMOJI['notsupport']
 
@@ -138,6 +141,8 @@ def user_post_markup(posts):
                 media_type = EMOJI['photo']
             elif posts[c].media_type == 2:
                 media_type = EMOJI['video']
+            elif posts[c].media_type == 8:
+                media_type = EMOJI['album']
             else:
                 media_type = EMOJI['notsupport']
 
@@ -146,7 +151,36 @@ def user_post_markup(posts):
         markup.add(*last_row, row_width=count % 5)
 
     markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_post_all'))
-    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_post_back'))
+    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
+
+    return markup
+
+
+def user_post_markup2(posts):
+    markup = InlineKeyboardMarkup()
+
+    c = 0
+
+    for i in range(3):
+        row = []
+        for j in range(3):
+            media_type = ''
+            if posts[c].media_type == 1:
+                media_type = EMOJI['photo']
+            elif posts[c].media_type == 2:
+                media_type = EMOJI['video']
+            elif posts[c].media_type == 8:
+                media_type = EMOJI['album']
+            else:
+                media_type = EMOJI['notsupport']
+
+            row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
+            c += 1
+
+        markup.add(*row, row_width=3)
+
+    markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_post_all'))
+    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
 
     return markup
 
@@ -157,8 +191,11 @@ def callback_query(call):
     caption = call.message.caption
     user_id = caption[caption.find('#u')+2:]
 
-    if call.data == 'cb_story':
+    if call.data == 'cb_back':
+        bot.answer_callback_query(call.id, 'Back to user info!')
+        bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_info_markup(user_id))
 
+    elif call.data == 'cb_story':
         stories = client.user_stories(user_id)
 
         if len(stories) == 0:
@@ -166,10 +203,6 @@ def callback_query(call):
         else:
             bot.answer_callback_query(call.id, 'Select Story')
             bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_story_markup(stories))
-
-    elif call.data == 'cb_story_back':
-        bot.answer_callback_query(call.id, 'Back to user info!')
-        bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_info_markup(user_id))
 
     elif call.data.startswith('cb_story_dl_'):
         number = int(call.data.replace('cb_story_dl_', ''))
@@ -200,8 +233,7 @@ def callback_query(call):
                 bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
     elif call.data == 'cb_post':
-
-        posts = client.user_medias(user_id)
+        posts = client.user_medias(user_id, 9)
 
         if len(posts) == 0:
             bot.answer_callback_query(call.id, 'User has no post!')
@@ -209,7 +241,27 @@ def callback_query(call):
             bot.answer_callback_query(call.id, 'Select Post')
             bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_post_markup(posts))
 
-        bot.answer_callback_query(call.id, 'Select Post')
+    elif call.data.startswith('cb_post_dl_'):
+        number = int(call.data.replace('cb_post_dl_', ''))
+
+        bot.answer_callback_query(call.id, f'Get Post {number+1}!')
+
+        posts = client.user_medias(user_id, number+1)
+
+        post = posts[number]
+        if post.media_type == 1:
+            bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'Post Number: {number+1}\n#u{user_id}')
+        elif post.media_type == 2:
+            bot.send_video(call.from_user.id, post.video_url, caption=f'Post Number: {number+1}\n#u{user_id}')
+        elif post.media_type == 8:
+            for slide_num, post.resource in enumerate(post.resources):
+                if resource.media_type == 1:
+                    bot.send_photo(call.from_user.id, resource.thumbnail_url, caption=f'Post Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
+                elif resource.media_type == 2:
+                    bot.send_video(call.from_user.id, resource.video_url, caption=f'Post Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
+
+        else:
+            bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
 
 @bot.inline_handler(lambda query: len(query.query) != 0)
