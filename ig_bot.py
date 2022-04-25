@@ -115,9 +115,9 @@ def user_post_markup(posts):
     count = len(posts)
     c = 0
 
-    for i in range(count//5):
+    for i in range(count//3):
         row = []
-        for j in range(5):
+        for j in range(3):
             media_type = ''
             if posts[c].media_type == 1:
                 media_type = EMOJI['photo']
@@ -131,11 +131,11 @@ def user_post_markup(posts):
             row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
             c += 1
 
-        markup.add(*row, row_width=5)
+        markup.add(*row, row_width=3)
 
-    if count % 5 != 0:
+    if count % 3 != 0:
         last_row = []
-        for i in range(count % 5):
+        for i in range(count % 3):
             media_type = ''
             if posts[c].media_type == 1:
                 media_type = EMOJI['photo']
@@ -148,7 +148,7 @@ def user_post_markup(posts):
 
             last_row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
             c += 1
-        markup.add(*last_row, row_width=count % 5)
+        markup.add(*last_row, row_width=count % 3)
 
     markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_post_all'))
     markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
@@ -250,15 +250,15 @@ def callback_query(call):
 
         post = posts[number]
         if post.media_type == 1:
-            bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'Post Number: {number+1}\n#u{user_id}')
+            bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nPost Number: {number+1}\n#u{user_id}')
         elif post.media_type == 2:
-            bot.send_video(call.from_user.id, post.video_url, caption=f'Post Number: {number+1}\n#u{user_id}')
+            bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\nPost Number: {number+1}\n#u{user_id}')
         elif post.media_type == 8:
-            for slide_num, post.resource in enumerate(post.resources):
+            for slide_num, resource in enumerate(post.resources):
                 if resource.media_type == 1:
-                    bot.send_photo(call.from_user.id, resource.thumbnail_url, caption=f'Post Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
+                    bot.send_photo(call.from_user.id, resource.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nPost Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
                 elif resource.media_type == 2:
-                    bot.send_video(call.from_user.id, resource.video_url, caption=f'Post Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
+                    bot.send_video(call.from_user.id, resource.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nPost Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
 
         else:
             bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
