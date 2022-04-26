@@ -1,5 +1,4 @@
 import signal
-from time import sleep
 from decouple import config
 
 import telebot
@@ -13,8 +12,6 @@ chat_id = config('CHAT_ID')
 
 TOKEN = config('TOKEN')
 bot = telebot.TeleBot(TOKEN)
-
-client = Client()
 
 EMOJI = {
     'username': '👤',
@@ -37,7 +34,20 @@ EMOJI = {
     'back': '🔙',
 }
 
+# CREATE AND LOGIN WITH CLIENT
+client = Client()
 
+try:
+    print(f"[INFO] Try to login as {config('IG_USERNAME')}")
+    client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
+    print(f"[INFO] Successfully logged in as {config('IG_USERNAME')}")
+
+except instagrapi.exceptions.PleaseWaitFewMinutes as e:
+    print(f'[INFO] Error')
+    exit(1)
+
+
+# ASK BEFORE EXIT AND LOGOUT
 def exit_handler(signum, frame):
     res = input("\n Ctrl-c was pressed. Do you really want to exit? y/n ")
     if res == 'y':
@@ -47,12 +57,7 @@ def exit_handler(signum, frame):
 
 signal.signal(signal.SIGINT, exit_handler)
 
-is_authenticated = False
-while not is_authenticated:
-    sleep(5)
-    is_authenticated = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
-
-
+# SEND START MESSAGE
 bot.send_message(chat_id, f"Hello {config('IG_USERNAME')}")
 
 
@@ -62,6 +67,7 @@ def user_info_markup(pk):
     markup.row_width = 2
     markup.add(InlineKeyboardButton('Story', callback_data='cb_story'),
                InlineKeyboardButton('Post', callback_data='cb_post'),
+               InlineKeyboardButton('Highlight', callback_data='cb_highlight'),
                InlineKeyboardButton('Open in Instagram', url=f'https://www.instagram.com/{username}'))
     return markup
 
@@ -156,30 +162,27 @@ def user_post_markup(posts):
     return markup
 
 
-def user_post_markup2(posts):
+def user_highlight_markup(highlights):
     markup = InlineKeyboardMarkup()
 
+    count = len(highlights)
     c = 0
 
-    for i in range(3):
+    for i in range(count//5):
         row = []
-        for j in range(3):
-            media_type = ''
-            if posts[c].media_type == 1:
-                media_type = EMOJI['photo']
-            elif posts[c].media_type == 2:
-                media_type = EMOJI['video']
-            elif posts[c].media_type == 8:
-                media_type = EMOJI['album']
-            else:
-                media_type = EMOJI['notsupport']
-
-            row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
+        for j in range(5):
+            row.append(InlineKeyboardButton(f'{highlights[c].title}', callback_data=f'cb_highlight_dl_{highlights[c].pk}'))
             c += 1
 
-        markup.add(*row, row_width=3)
+        markup.add(*row, row_width=5)
 
-    markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_post_all'))
+    if count % 5 != 0:
+        last_row = []
+        for i in range(count % 5):
+            last_row.append(InlineKeyboardButton(f'{highlights[c].title}', callback_data=f'cb_highlight_dl_{highlights[c].pk}'))
+            c += 1
+        markup.add(*last_row, row_width=count % 5)
+
     markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
 
     return markup
@@ -195,6 +198,7 @@ def callback_query(call):
         bot.answer_callback_query(call.id, 'Back to user info!')
         bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_info_markup(user_id))
 
+    # Story
     elif call.data == 'cb_story':
         stories = client.user_stories(user_id)
 
@@ -232,6 +236,7 @@ def callback_query(call):
             else:
                 bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
+    # Post
     elif call.data == 'cb_post':
         posts = client.user_medias(user_id, 9)
 
@@ -243,7 +248,6 @@ def callback_query(call):
 
     elif call.data.startswith('cb_post_dl_'):
         number = int(call.data.replace('cb_post_dl_', ''))
-
         bot.answer_callback_query(call.id, f'Get Post {number+1}!')
 
         posts = client.user_medias(user_id, number+1)
@@ -262,6 +266,25 @@ def callback_query(call):
 
         else:
             bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
+
+    # Highlight
+    elif call.data == 'cb_highlight':
+        highlights = client.user_highlights(user_id)
+
+        if len(highlights) == 0:
+            bot.answer_callback_query(call.id, 'User has no highlight!')
+        else:
+            bot.answer_callback_query(call.id, 'Select Highlight')
+            bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_highlight_markup(highlights))
+
+    elif call.data.startswith('cb_highlight_dl_'):
+        highlight_pk = int(call.data.replace('cb_highlight_dl_', ''))
+
+        highlight = client.highlight_info(highlight_pk)
+
+        bot.answer_callback_query(call.id, f'Select Story from Highlight!')
+        print(highlight, '*\n'*5, highlight.items)
+        bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_story_markup(highlight.items))
 
 
 @bot.inline_handler(lambda query: len(query.query) != 0)
@@ -297,16 +320,16 @@ def send_welcome(message):
     bot.send_message(message.chat.id, 'Hello World')
 
 
-# @ bot.message_handler(commands=['login'])
-# def bot_login(message):
-#     is_logged_in = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
-#     bot.send_message(message.chat.id, f"{'Logged in' if is_logged_in else 'Can not log in'}")
+@ bot.message_handler(commands=['login'])
+def bot_login(message):
+    is_logged_in = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
+    bot.send_message(message.chat.id, f"{'Logged in' if is_logged_in else 'Can not log in'}")
 
 
-# @ bot.message_handler(commands=['logout'])
-# def bot_login(message):
-#     is_logged_out = client.logout()
-#     bot.send_message(message.chat.id, f"{'Logged out' if is_logged_out else 'Can not log out'}")
+@ bot.message_handler(commands=['logout'])
+def bot_login(message):
+    is_logged_out = client.logout()
+    bot.send_message(message.chat.id, f"{'Logged out' if is_logged_out else 'Can not log out'}")
 
 
 @ bot.message_handler(func=lambda message: True)
