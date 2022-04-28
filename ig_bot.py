@@ -8,7 +8,6 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import instagrapi
 from instagrapi import Client
 
-chat_id = config('CHAT_ID')
 
 TOKEN = config('TOKEN')
 bot = telebot.TeleBot(TOKEN)
@@ -58,133 +57,91 @@ def exit_handler(signum, frame):
 signal.signal(signal.SIGINT, exit_handler)
 
 # SEND START MESSAGE
-bot.send_message(chat_id, f"Hello {config('IG_USERNAME')}")
+bot.send_message(config('CHAT_ID'), f"Hello {config('IG_USERNAME')}")
+
+
+# KEYBOARD MARKUP GENERATOR
+def IKMGenerator(items: list, row_width: int, callback: str, btn_get_all: bool = False, btn_back: bool = True, highlight_pk: int = None):
+    keyboard_markup = InlineKeyboardMarkup()
+
+    count = len(items)
+    c = 0
+
+    for i in range(count//row_width):
+        row = []
+        for j in range(row_width):
+            if callback in ['story', 'post']:
+                media_type = ''
+                if items[c].media_type == 1:
+                    media_type = EMOJI['photo']
+                elif items[c].media_type == 2:
+                    media_type = EMOJI['video']
+                elif items[c].media_type == 8:
+                    media_type = EMOJI['album']
+                else:
+                    media_type = EMOJI['notsupport']
+
+                row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_{callback}_dl_{items[c].pk}'))
+
+            elif callback == 'highlight':
+                row.append(InlineKeyboardButton(items[c].title, callback_data=f'cb_{callback}_dl_{items[c].pk}'))
+
+            c += 1
+
+        keyboard_markup.add(*row, row_width=row_width)
+
+    if count % row_width != 0:
+        last_row = []
+        for i in range(count % row_width):
+            if callback in ['story', 'post']:
+                media_type = ''
+                if items[c].media_type == 1:
+                    media_type = EMOJI['photo']
+                elif items[c].media_type == 2:
+                    media_type = EMOJI['video']
+                elif items[c].media_type == 8:
+                    media_type = EMOJI['album']
+                else:
+                    media_type = EMOJI['notsupport']
+
+                last_row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_{callback}_dl_{items[c].pk}'))
+
+            elif callback == 'highlight':
+                last_row.append(InlineKeyboardButton(items[c].title, callback_data=f'cb_{callback}_dl_{items[c].pk}'))
+
+            c += 1
+        keyboard_markup.add(*last_row, row_width=count % row_width)
+
+    if btn_get_all:
+        if highlight_pk is not None:
+            keyboard_markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data=f'cb_{callback}_all_{highlight_pk}'))
+        else:
+            keyboard_markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data=f'cb_{callback}_all'))
+    if btn_back:
+        keyboard_markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
+
+    return keyboard_markup
+
+
+def send_group_files(chat_id, files_list):
+    c = 0
+    while c < len(files_list):
+        files = files_list[c:c+10]
+        c += 10
+        bot.send_media_group(chat_id, files)
 
 
 def user_info_markup(pk):
     username = client.user_info(pk).username
     markup = InlineKeyboardMarkup()
-    markup.row_width = 2
+    # markup.row_width = 3
     markup.add(InlineKeyboardButton('Story', callback_data='cb_story'),
                InlineKeyboardButton('Post', callback_data='cb_post'),
                InlineKeyboardButton('Highlight', callback_data='cb_highlight'),
+               row_width=3)
+
+    markup.add(InlineKeyboardButton('Send in Telegram', switch_inline_query=username),
                InlineKeyboardButton('Open in Instagram', url=f'https://www.instagram.com/{username}'))
-    return markup
-
-
-def user_story_markup(stories):
-    markup = InlineKeyboardMarkup()
-
-    count = len(stories)
-    c = 0
-
-    for i in range(count//5):
-        row = []
-        for j in range(5):
-            media_type = ''
-            if stories[c].media_type == 1:
-                media_type = EMOJI['photo']
-            elif stories[c].media_type == 2:
-                media_type = EMOJI['video']
-            else:
-                media_type = EMOJI['notsupport']
-
-            row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_story_dl_{c}'))
-            c += 1
-
-        markup.add(*row, row_width=5)
-
-    if count % 5 != 0:
-        last_row = []
-        for i in range(count % 5):
-            media_type = ''
-            if stories[c].media_type == 1:
-                media_type = EMOJI['photo']
-            elif stories[c].media_type == 2:
-                media_type = EMOJI['video']
-            else:
-                media_type = EMOJI['notsupport']
-
-            last_row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_story_dl_{c}'))
-            c += 1
-        markup.add(*last_row, row_width=count % 5)
-
-    markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_story_all'))
-    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
-
-    return markup
-
-
-def user_post_markup(posts):
-    markup = InlineKeyboardMarkup()
-
-    count = len(posts)
-    c = 0
-
-    for i in range(count//3):
-        row = []
-        for j in range(3):
-            media_type = ''
-            if posts[c].media_type == 1:
-                media_type = EMOJI['photo']
-            elif posts[c].media_type == 2:
-                media_type = EMOJI['video']
-            elif posts[c].media_type == 8:
-                media_type = EMOJI['album']
-            else:
-                media_type = EMOJI['notsupport']
-
-            row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
-            c += 1
-
-        markup.add(*row, row_width=3)
-
-    if count % 3 != 0:
-        last_row = []
-        for i in range(count % 3):
-            media_type = ''
-            if posts[c].media_type == 1:
-                media_type = EMOJI['photo']
-            elif posts[c].media_type == 2:
-                media_type = EMOJI['video']
-            elif posts[c].media_type == 8:
-                media_type = EMOJI['album']
-            else:
-                media_type = EMOJI['notsupport']
-
-            last_row.append(InlineKeyboardButton(f'{c+1} {media_type}', callback_data=f'cb_post_dl_{c}'))
-            c += 1
-        markup.add(*last_row, row_width=count % 3)
-
-    markup.add(InlineKeyboardButton(f"Get all {EMOJI['download']}", callback_data='cb_post_all'))
-    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
-
-    return markup
-
-
-def user_highlight_markup(highlights):
-    markup = InlineKeyboardMarkup()
-
-    count = len(highlights)
-    c = 0
-
-    for i in range(count//5):
-        row = []
-        for j in range(5):
-            row.append(InlineKeyboardButton(f'{highlights[c].title}', callback_data=f'cb_highlight_dl_{highlights[c].pk}'))
-            c += 1
-
-        markup.add(*row, row_width=5)
-
-    if count % 5 != 0:
-        last_row = []
-        for i in range(count % 5):
-            last_row.append(InlineKeyboardButton(f'{highlights[c].title}', callback_data=f'cb_highlight_dl_{highlights[c].pk}'))
-            c += 1
-        markup.add(*last_row, row_width=count % 5)
-
-    markup.add(InlineKeyboardButton(f"Back {EMOJI['back']}", callback_data='cb_back'))
-
     return markup
 
 
@@ -196,7 +153,7 @@ def callback_query(call):
 
     if call.data == 'cb_back':
         bot.answer_callback_query(call.id, 'Back to user info!')
-        bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_info_markup(user_id))
+        bot.edit_message_reply_markup(call.from_user.id, call.message.id, reply_markup=user_info_markup(user_id))
 
     # Story
     elif call.data == 'cb_story':
@@ -206,20 +163,19 @@ def callback_query(call):
             bot.answer_callback_query(call.id, 'User has no story!')
         else:
             bot.answer_callback_query(call.id, 'Select Story')
-            bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_story_markup(stories))
+            bot.edit_message_reply_markup(call.from_user.id, call.message.id, reply_markup=IKMGenerator(stories, 5, 'story', True))
 
     elif call.data.startswith('cb_story_dl_'):
-        number = int(call.data.replace('cb_story_dl_', ''))
+        pk = int(call.data.replace('cb_story_dl_', ''))
 
-        bot.answer_callback_query(call.id, f'Get Story {number+1}!')
+        bot.answer_callback_query(call.id, f'Get Story {pk}')
 
-        stories = client.user_stories(user_id)
+        story = client.story_info(pk)
 
-        story = stories[number]
         if story.media_type == 1:
-            bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{user_id}')
+            bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'#u{user_id}')
         elif story.media_type == 2:
-            bot.send_video(call.from_user.id, story.video_url, caption=f'Story Number: {number+1}\n#u{user_id}')
+            bot.send_video(call.from_user.id, story.video_url, caption=f'#u{user_id}')
         else:
             bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
@@ -228,13 +184,17 @@ def callback_query(call):
 
         stories = client.user_stories(user_id)
 
+        stories_list = []
+
         for number, story in enumerate(stories):
             if story.media_type == 1:
-                bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{user_id}')
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, f'Story Number: {number+1}\n#u{user_id}'))
             elif story.media_type == 2:
-                bot.send_video(call.from_user.id, story.video_url, caption=f'Story Number: {number+1}\n#u{user_id}')
+                stories_list.append(types.InputMediaVideo(story.video_url, f'Story Number: {number+1}\n#u{user_id}'))
             else:
-                bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
+                bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
+
+        send_group_files(call.from_user.id, stories_list)
 
     # Post
     elif call.data == 'cb_post':
@@ -244,25 +204,30 @@ def callback_query(call):
             bot.answer_callback_query(call.id, 'User has no post!')
         else:
             bot.answer_callback_query(call.id, 'Select Post')
-            bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_post_markup(posts))
+            bot.edit_message_reply_markup(call.from_user.id, call.message.id, reply_markup=IKMGenerator(posts, 3, 'post'))
 
     elif call.data.startswith('cb_post_dl_'):
-        number = int(call.data.replace('cb_post_dl_', ''))
-        bot.answer_callback_query(call.id, f'Get Post {number+1}!')
+        pk = int(call.data.replace('cb_post_dl_', ''))
 
-        posts = client.user_medias(user_id, number+1)
+        bot.answer_callback_query(call.id, f'Get Post {pk}')
 
-        post = posts[number]
+        post = client.media_info(pk)
+
         if post.media_type == 1:
-            bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nPost Number: {number+1}\n#u{user_id}')
+            bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}')
         elif post.media_type == 2:
-            bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\nPost Number: {number+1}\n#u{user_id}')
+            bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{user_id}')
         elif post.media_type == 8:
+            slides_list = []
             for slide_num, resource in enumerate(post.resources):
                 if resource.media_type == 1:
-                    bot.send_photo(call.from_user.id, resource.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nPost Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
+                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
+                    # bot.send_photo(call.from_user.id, resource.thumbnail_url, captionf'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}')
                 elif resource.media_type == 2:
-                    bot.send_video(call.from_user.id, resource.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nPost Number: {number+1}\nSlide: {slide_num+1}\n#u{user_id}')
+                    slides_list.append(types.InputMediaVideo(resource.video_url, f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
+                    # bot.send_video(call.from_user.id, resource.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}')
+
+            send_group_files(call.from_user.id, slides_list)
 
         else:
             bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
@@ -275,16 +240,35 @@ def callback_query(call):
             bot.answer_callback_query(call.id, 'User has no highlight!')
         else:
             bot.answer_callback_query(call.id, 'Select Highlight')
-            bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_highlight_markup(highlights))
+            bot.edit_message_reply_markup(call.from_user.id, call.message.id, reply_markup=IKMGenerator(highlights, 3, 'highlight'))
 
     elif call.data.startswith('cb_highlight_dl_'):
-        highlight_pk = int(call.data.replace('cb_highlight_dl_', ''))
+        pk = int(call.data.replace('cb_highlight_dl_', ''))
 
-        highlight = client.highlight_info(highlight_pk)
+        bot.answer_callback_query(call.id, f'Select Story from Highlight {pk}')
 
-        bot.answer_callback_query(call.id, f'Select Story from Highlight!')
-        print(highlight, '*\n'*5, highlight.items)
-        bot.edit_message_reply_markup(chat_id=call.from_user.id, message_id=call.message.id, reply_markup=user_story_markup(highlight.items))
+        highlight = client.highlight_info(pk)
+
+        bot.edit_message_reply_markup(call.from_user.id, call.message.id, reply_markup=IKMGenerator(highlight.items, 5, 'story', True, highlight_pk=highlight.pk))
+
+    elif call.data.startswith('cb_story_all_'):
+        pk = int(call.data.replace('cb_story_all_', ''))
+
+        bot.answer_callback_query(call.id, f'Get all Stories from Highlight {pk}')
+
+        highlight = client.highlight_info(pk)
+
+        stories_list = []
+
+        for number, story in enumerate(highlight.items):
+            if story.media_type == 1:
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, f'Highlight: {highlight.title}\nStory Number: {number+1}'))
+            elif story.media_type == 2:
+                stories_list.append(types.InputMediaVideo(story.video_url, f'Highlight: {highlight.title}\nStory Number: {number+1}'))
+            else:
+                bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
+
+        send_group_files(call.from_user.id, stories_list)
 
 
 @bot.inline_handler(lambda query: len(query.query) != 0)
@@ -292,7 +276,7 @@ def inline_query(query):
     try:
         try:
             user_info = client.user_info_by_username(query.query)
-            r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=f'{user_info.username}', description=f'{user_info.full_name}',
+            r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=user_info.username, description=user_info.full_name,
                                              caption=f'''
                                              {EMOJI['username']} Username: {user_info.username}
                                              {EMOJI['name']} FullName: {user_info.full_name}
@@ -315,24 +299,24 @@ def inline_query(query):
         print(e)
 
 
-@ bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     bot.send_message(message.chat.id, 'Hello World')
 
 
-@ bot.message_handler(commands=['login'])
+@bot.message_handler(commands=['login'])
 def bot_login(message):
     is_logged_in = client.login(config('IG_USERNAME'),  config('IG_PASSWORD'))
     bot.send_message(message.chat.id, f"{'Logged in' if is_logged_in else 'Can not log in'}")
 
 
-@ bot.message_handler(commands=['logout'])
+@bot.message_handler(commands=['logout'])
 def bot_login(message):
     is_logged_out = client.logout()
     bot.send_message(message.chat.id, f"{'Logged out' if is_logged_out else 'Can not log out'}")
 
 
-@ bot.message_handler(func=lambda message: True)
+@bot.message_handler(func=lambda message: True)
 def answer_message(message):
 
     try:
