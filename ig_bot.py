@@ -1,4 +1,5 @@
 import signal
+from time import sleep
 from decouple import config
 
 import telebot
@@ -129,6 +130,7 @@ def send_group_files(chat_id, files_list):
         files = files_list[c:c+10]
         c += 10
         bot.send_media_group(chat_id, files)
+        sleep(1)
 
 
 def user_info_markup(pk):
