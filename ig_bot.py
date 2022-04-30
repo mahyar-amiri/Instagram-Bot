@@ -200,7 +200,7 @@ def callback_query(call):
 
     # Post
     elif call.data == 'cb_post':
-        posts = client.user_medias(user_id, 9)
+        posts = client.user_medias(user_id, 15)
 
         if len(posts) == 0:
             bot.answer_callback_query(call.id, 'User has no post!')
