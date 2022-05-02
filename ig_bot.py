@@ -190,9 +190,9 @@ def callback_query(call):
 
         for number, story in enumerate(stories):
             if story.media_type == 1:
-                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, f'Story Number: {number+1}\n#u{user_id}'))
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{user_id}'))
             elif story.media_type == 2:
-                stories_list.append(types.InputMediaVideo(story.video_url, f'Story Number: {number+1}\n#u{user_id}'))
+                stories_list.append(types.InputMediaVideo(story.video_url, caption=f'Story Number: {number+1}\n#u{user_id}'))
             else:
                 bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
 
@@ -223,11 +223,9 @@ def callback_query(call):
             slides_list = []
             for slide_num, resource in enumerate(post.resources):
                 if resource.media_type == 1:
-                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
-                    # bot.send_photo(call.from_user.id, resource.thumbnail_url, captionf'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}')
+                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
                 elif resource.media_type == 2:
-                    slides_list.append(types.InputMediaVideo(resource.video_url, f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
-                    # bot.send_video(call.from_user.id, resource.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}')
+                    slides_list.append(types.InputMediaVideo(resource.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
 
             send_group_files(call.from_user.id, slides_list)
 
@@ -264,9 +262,9 @@ def callback_query(call):
 
         for number, story in enumerate(highlight.items):
             if story.media_type == 1:
-                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, f'Highlight: {highlight.title}\nStory Number: {number+1}'))
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Highlight: {highlight.title}\nStory Number: {number+1}'))
             elif story.media_type == 2:
-                stories_list.append(types.InputMediaVideo(story.video_url, f'Highlight: {highlight.title}\nStory Number: {number+1}'))
+                stories_list.append(types.InputMediaVideo(story.video_url, caption=f'Highlight: {highlight.title}\nStory Number: {number+1}'))
             else:
                 bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
 
