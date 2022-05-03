@@ -139,17 +139,17 @@ def user_info_markup(pk):
 
 
 def send_group_files(chat_id, files_list):
-    c = 0
-    i = 10
-    while c < len(files_list):
-        files = files_list[c:c+i]
+    start = 0
+    count = 10
+    while start < len(files_list):
+        files = files_list[start:start+count]
         try:
             bot.send_media_group(chat_id, files)
-            c += i
-            i = 10
+            sleep(0.3)
+            start += count
+            count = 10
         except:
-            i -= 1
-        sleep(0.3)
+            count -= 1
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -228,7 +228,7 @@ def callback_query(call):
 
             slides_list = []
             for slide_num, resource in enumerate(post.resources):
-                caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}' if slide_num == 0 else ''
+                caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}' if slide_num == 0 else None
                 if resource.media_type == 1:
                     slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
                 elif resource.media_type == 2:
