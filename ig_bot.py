@@ -124,15 +124,6 @@ def IKMGenerator(items: list, row_width: int, callback: str, btn_get_all: bool =
     return keyboard_markup
 
 
-def send_group_files(chat_id, files_list):
-    c = 0
-    while c < len(files_list):
-        files = files_list[c:c+10]
-        c += 10
-        bot.send_media_group(chat_id, files)
-        sleep(1)
-
-
 def user_info_markup(pk):
     username = client.user_info(pk).username
     markup = InlineKeyboardMarkup()
@@ -145,6 +136,15 @@ def user_info_markup(pk):
     markup.add(InlineKeyboardButton('Send in Telegram', switch_inline_query=username),
                InlineKeyboardButton('Open in Instagram', url=f'https://www.instagram.com/{username}'))
     return markup
+
+
+def send_group_files(chat_id, files_list):
+    c = 0
+    while c < len(files_list):
+        files = files_list[c:c+10]
+        c += 10
+        bot.send_media_group(chat_id, files)
+        sleep(1)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -220,12 +220,14 @@ def callback_query(call):
         elif post.media_type == 2:
             bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{user_id}')
         elif post.media_type == 8:
+
             slides_list = []
             for slide_num, resource in enumerate(post.resources):
+                caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}' if slide_num == 0 else ''
                 if resource.media_type == 1:
-                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
+                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
                 elif resource.media_type == 2:
-                    slides_list.append(types.InputMediaVideo(resource.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\nSlide: {slide_num+1}\n#u{user_id}'))
+                    slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
 
             send_group_files(call.from_user.id, slides_list)
 
