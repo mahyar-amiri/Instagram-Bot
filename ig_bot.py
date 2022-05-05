@@ -152,6 +152,43 @@ def send_group_files(chat_id, files_list):
             count -= 1
 
 
+def send_story(chat_id, story_pk):
+    story = client.story_info(story_pk)
+
+    if story.media_type == 1:
+        bot.send_photo(chat_id, story.thumbnail_url, caption=f'#u{story.user.pk}')
+    elif story.media_type == 2:
+        bot.send_video(chat_id, story.video_url, caption=f'#u{story.user.pk}')
+    else:
+        bot.send_message(chat_id, 'FORMAT NOT FOUND!')
+
+
+def send_media(chat_id, media_pk):
+    post = client.media_info(media_pk)
+
+    try:
+        if post.media_type == 1:
+            bot.send_photo(chat_id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}')
+        elif post.media_type == 2:
+            bot.send_video(chat_id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{post.user.pk}')
+        elif post.media_type == 8:
+
+            slides_list = []
+            for slide_num, resource in enumerate(post.resources):
+                caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}' if slide_num == 0 else None
+                if resource.media_type == 1:
+                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
+                elif resource.media_type == 2:
+                    slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
+
+            send_group_files(chat_id, slides_list)
+
+        else:
+            bot.send_message(chat_id, 'FORMAT NOT FOUND!')
+    except:
+        bot.send_message(chat_id, 'CAN NOT UPLOAD LARGE MEDIA!')
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
 
@@ -177,14 +214,16 @@ def callback_query(call):
 
         bot.answer_callback_query(call.id, f'Get Story {pk}')
 
-        story = client.story_info(pk)
+        send_story(call.from_user.id, pk)
 
-        if story.media_type == 1:
-            bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'#u{user_id}')
-        elif story.media_type == 2:
-            bot.send_video(call.from_user.id, story.video_url, caption=f'#u{user_id}')
-        else:
-            bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
+        # story = client.story_info(pk)
+
+        # if story.media_type == 1:
+        #     bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'#u{user_id}')
+        # elif story.media_type == 2:
+        #     bot.send_video(call.from_user.id, story.video_url, caption=f'#u{user_id}')
+        # else:
+        #     bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
     elif call.data == 'cb_story_all':
         bot.answer_callback_query(call.id, 'Get all Stories!')
@@ -195,9 +234,9 @@ def callback_query(call):
 
         for number, story in enumerate(stories):
             if story.media_type == 1:
-                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{user_id}'))
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{story.user.pk}'))
             elif story.media_type == 2:
-                stories_list.append(types.InputMediaVideo(story.video_url, caption=f'Story Number: {number+1}\n#u{user_id}'))
+                stories_list.append(types.InputMediaVideo(story.video_url, caption=f'Story Number: {number+1}\n#u{story.user.pk}'))
             else:
                 bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
 
@@ -218,26 +257,28 @@ def callback_query(call):
 
         bot.answer_callback_query(call.id, f'Get Post {pk}')
 
-        post = client.media_info(pk)
+        send_media(call.from_user.id, pk)
 
-        if post.media_type == 1:
-            bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}')
-        elif post.media_type == 2:
-            bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{user_id}')
-        elif post.media_type == 8:
+        # post = client.media_info(pk)
 
-            slides_list = []
-            for slide_num, resource in enumerate(post.resources):
-                caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}' if slide_num == 0 else None
-                if resource.media_type == 1:
-                    slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
-                elif resource.media_type == 2:
-                    slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
+        # if post.media_type == 1:
+        #     bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}')
+        # elif post.media_type == 2:
+        #     bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{user_id}')
+        # elif post.media_type == 8:
 
-            send_group_files(call.from_user.id, slides_list)
+        #     slides_list = []
+        #     for slide_num, resource in enumerate(post.resources):
+        #         caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}' if slide_num == 0 else None
+        #         if resource.media_type == 1:
+        #             slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
+        #         elif resource.media_type == 2:
+        #             slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
 
-        else:
-            bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
+        #     send_group_files(call.from_user.id, slides_list)
+
+        # else:
+        #     bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
     # Highlight
     elif call.data == 'cb_highlight':
@@ -325,12 +366,61 @@ def bot_login(message):
 
 @bot.message_handler(func=lambda message: True)
 def answer_message(message):
-
+    text = message.text
     try:
-        if message.text.startswith('eval '):
-            bot.reply_to(message, f'{eval(message.text[5:])}')
+        if text.startswith('eval '):
+            bot.reply_to(message, f'{eval(text[5:])}')
+
+        # Get link
+        elif 'instagram.com/' in text:
+            # Story
+            if 'stories' in text:
+                pk = client.story_pk_from_url(text)
+
+                send_story(message.chat.id, pk)
+
+                # story = client.story_info(pk)
+
+                # if story.media_type == 1:
+                #     bot.send_photo(message.chat.id, story.thumbnail_url, caption=f'#u{story.user.pk}')
+                # elif story.media_type == 2:
+                #     bot.send_video(message.chat.id, story.video_url, caption=f'#u{story.user.pk}')
+                # else:
+                #     bot.send_message(message.chat.id, 'FORMAT NOT FOUND!')
+
+            # Post
+            elif text.startswith(('https://www.instagram.com/p/', 'https://www.instagram.com/tv/', 'https://www.instagram.com/reel/')):
+                pk = client.media_pk_from_url(text)
+
+                send_media(message.chat.id, pk)
+
+                # post = client.media_info(pk)
+
+                # if post.media_type == 1:
+                #     bot.send_photo(message.chat.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}')
+                # elif post.media_type == 2:
+                #     bot.send_video(message.chat.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{post.user.pk}')
+                # elif post.media_type == 8:
+
+                #     slides_list = []
+                #     for slide_num, resource in enumerate(post.resources):
+                #         caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}' if slide_num == 0 else None
+                #         if resource.media_type == 1:
+                #             slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
+                #         elif resource.media_type == 2:
+                #             slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
+
+                #     send_group_files(message.chat.id, slides_list)
+
+                # else:
+                #     bot.send_message(message.chat.id, 'FORMAT NOT FOUND!')
+
+            else:
+                bot.send_message(message.chat.id, 'URL NOT FOUND!')
+
+        # Search for Username
         else:
-            user_info = client.user_info_by_username(message.text)
+            user_info = client.user_info_by_username(text)
             bot.send_photo(message.chat.id, user_info.profile_pic_url,
                            f'''
                         {EMOJI['username']} Username: {user_info.username}
