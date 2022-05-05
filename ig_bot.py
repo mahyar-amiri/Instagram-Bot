@@ -127,7 +127,6 @@ def IKMGenerator(items: list, row_width: int, callback: str, btn_get_all: bool =
 def user_info_markup(pk):
     username = client.user_info(pk).username
     markup = InlineKeyboardMarkup()
-    # markup.row_width = 3
     markup.add(InlineKeyboardButton('Story', callback_data='cb_story'),
                InlineKeyboardButton('Post', callback_data='cb_post'),
                InlineKeyboardButton('Highlight', callback_data='cb_highlight'),
@@ -154,7 +153,6 @@ def send_group_files(chat_id, files_list):
 
 def send_story(chat_id, story_pk):
     story = client.story_info(story_pk)
-
     if story.media_type == 1:
         bot.send_photo(chat_id, story.thumbnail_url, caption=f'#u{story.user.pk}')
     elif story.media_type == 2:
@@ -168,14 +166,14 @@ def send_media(chat_id, media_pk):
 
     try:
         if post.media_type == 1:
-            bot.send_photo(chat_id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}')
+            bot.send_photo(chat_id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count:,}\nComments: {post.comment_count:,}\n\n#u{post.user.pk}')
         elif post.media_type == 2:
-            bot.send_video(chat_id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{post.user.pk}')
+            bot.send_video(chat_id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count:,}\nComments: {post.comment_count:,}\nViews: {post.view_count:,}\n\n#u{post.user.pk}')
         elif post.media_type == 8:
 
             slides_list = []
             for slide_num, resource in enumerate(post.resources):
-                caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}' if slide_num == 0 else None
+                caption = f'{post.caption_text}\n\nLikes: {post.like_count:,}\nComments: {post.comment_count:,}\n\n#u{post.user.pk}' if slide_num == 0 else None
                 if resource.media_type == 1:
                     slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
                 elif resource.media_type == 2:
@@ -202,7 +200,6 @@ def callback_query(call):
     # Story
     elif call.data == 'cb_story':
         stories = client.user_stories(user_id)
-
         if len(stories) == 0:
             bot.answer_callback_query(call.id, 'User has no story!')
         else:
@@ -211,27 +208,14 @@ def callback_query(call):
 
     elif call.data.startswith('cb_story_dl_'):
         pk = int(call.data.replace('cb_story_dl_', ''))
-
         bot.answer_callback_query(call.id, f'Get Story {pk}')
-
         send_story(call.from_user.id, pk)
-
-        # story = client.story_info(pk)
-
-        # if story.media_type == 1:
-        #     bot.send_photo(call.from_user.id, story.thumbnail_url, caption=f'#u{user_id}')
-        # elif story.media_type == 2:
-        #     bot.send_video(call.from_user.id, story.video_url, caption=f'#u{user_id}')
-        # else:
-        #     bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
     elif call.data == 'cb_story_all':
         bot.answer_callback_query(call.id, 'Get all Stories!')
-
         stories = client.user_stories(user_id)
 
         stories_list = []
-
         for number, story in enumerate(stories):
             if story.media_type == 1:
                 stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{story.user.pk}'))
@@ -245,7 +229,6 @@ def callback_query(call):
     # Post
     elif call.data == 'cb_post':
         posts = client.user_medias(user_id, 15)
-
         if len(posts) == 0:
             bot.answer_callback_query(call.id, 'User has no post!')
         else:
@@ -254,36 +237,12 @@ def callback_query(call):
 
     elif call.data.startswith('cb_post_dl_'):
         pk = int(call.data.replace('cb_post_dl_', ''))
-
         bot.answer_callback_query(call.id, f'Get Post {pk}')
-
         send_media(call.from_user.id, pk)
-
-        # post = client.media_info(pk)
-
-        # if post.media_type == 1:
-        #     bot.send_photo(call.from_user.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}')
-        # elif post.media_type == 2:
-        #     bot.send_video(call.from_user.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{user_id}')
-        # elif post.media_type == 8:
-
-        #     slides_list = []
-        #     for slide_num, resource in enumerate(post.resources):
-        #         caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{user_id}' if slide_num == 0 else None
-        #         if resource.media_type == 1:
-        #             slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
-        #         elif resource.media_type == 2:
-        #             slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
-
-        #     send_group_files(call.from_user.id, slides_list)
-
-        # else:
-        #     bot.send_message(call.from_user.id, 'FORMAT NOT FOUND!')
 
     # Highlight
     elif call.data == 'cb_highlight':
         highlights = client.user_highlights(user_id)
-
         if len(highlights) == 0:
             bot.answer_callback_query(call.id, 'User has no highlight!')
         else:
@@ -292,22 +251,16 @@ def callback_query(call):
 
     elif call.data.startswith('cb_highlight_dl_'):
         pk = int(call.data.replace('cb_highlight_dl_', ''))
-
         bot.answer_callback_query(call.id, f'Select Story from Highlight {pk}')
-
         highlight = client.highlight_info(pk)
-
         bot.edit_message_reply_markup(call.from_user.id, call.message.id, reply_markup=IKMGenerator(highlight.items, 5, 'story', True, highlight_pk=highlight.pk))
 
     elif call.data.startswith('cb_story_all_'):
         pk = int(call.data.replace('cb_story_all_', ''))
-
         bot.answer_callback_query(call.id, f'Get all Stories from Highlight {pk}')
-
         highlight = client.highlight_info(pk)
 
         stories_list = []
-
         for number, story in enumerate(highlight.items):
             if story.media_type == 1:
                 stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Highlight: {highlight.title}\nStory Number: {number+1}'))
@@ -324,19 +277,19 @@ def inline_query(query):
     try:
         try:
             user_info = client.user_info_by_username(query.query)
-            r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=user_info.username, description=user_info.full_name,
-                                             caption=f'''
-                                             {EMOJI['username']} Username: {user_info.username}
-                                             {EMOJI['name']} FullName: {user_info.full_name}
-                                             {EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}
-                                             {EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}
-                                             {EMOJI['bio']} Biography: {user_info.biography}
-                                             {EMOJI['post']} Posts: {user_info.media_count}
-                                             {EMOJI['follower']} Followers: {user_info.follower_count:,}
-                                             {EMOJI['following']} Followings: {user_info.following_count:,}
-                                             {EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}
-                                             #u{user_info.pk}
-                                             '''.replace('                                             ', '\n'))
+            caption = '\n'.join([
+                f"{EMOJI['username']} Username: {user_info.username}",
+                f"{EMOJI['name']} FullName: {user_info.full_name}",
+                f"{EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}",
+                f"{EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}",
+                f"{EMOJI['bio']} Biography: {user_info.biography}",
+                f"{EMOJI['post']} Posts: {user_info.media_count}",
+                f"{EMOJI['follower']} Followers: {user_info.follower_count:,}",
+                f"{EMOJI['following']} Followings: {user_info.following_count:,}",
+                f"{EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}",
+                f"#u{user_info.pk}"
+            ])
+            r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=user_info.username, description=user_info.full_name, caption=caption,)
 
         except instagrapi.exceptions.UserNotFound as e:
             r = types.InlineQueryResultArticle('1', f'Not Found', input_message_content=types.InputTextMessageContent(query.query))
@@ -376,44 +329,12 @@ def answer_message(message):
             # Story
             if 'stories' in text:
                 pk = client.story_pk_from_url(text)
-
                 send_story(message.chat.id, pk)
 
-                # story = client.story_info(pk)
-
-                # if story.media_type == 1:
-                #     bot.send_photo(message.chat.id, story.thumbnail_url, caption=f'#u{story.user.pk}')
-                # elif story.media_type == 2:
-                #     bot.send_video(message.chat.id, story.video_url, caption=f'#u{story.user.pk}')
-                # else:
-                #     bot.send_message(message.chat.id, 'FORMAT NOT FOUND!')
-
             # Post
-            elif text.startswith(('https://www.instagram.com/p/', 'https://www.instagram.com/tv/', 'https://www.instagram.com/reel/')):
+            elif any(media in text for media in ['/p/', '/tv/', '/reel/']):
                 pk = client.media_pk_from_url(text)
-
                 send_media(message.chat.id, pk)
-
-                # post = client.media_info(pk)
-
-                # if post.media_type == 1:
-                #     bot.send_photo(message.chat.id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}')
-                # elif post.media_type == 2:
-                #     bot.send_video(message.chat.id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\nViews: {post.view_count}\n\n#u{post.user.pk}')
-                # elif post.media_type == 8:
-
-                #     slides_list = []
-                #     for slide_num, resource in enumerate(post.resources):
-                #         caption = f'{post.caption_text}\n\nLikes: {post.like_count}\nComments: {post.comment_count}\n\n#u{post.user.pk}' if slide_num == 0 else None
-                #         if resource.media_type == 1:
-                #             slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
-                #         elif resource.media_type == 2:
-                #             slides_list.append(types.InputMediaVideo(resource.video_url, caption=caption))
-
-                #     send_group_files(message.chat.id, slides_list)
-
-                # else:
-                #     bot.send_message(message.chat.id, 'FORMAT NOT FOUND!')
 
             else:
                 bot.send_message(message.chat.id, 'URL NOT FOUND!')
@@ -421,19 +342,19 @@ def answer_message(message):
         # Search for Username
         else:
             user_info = client.user_info_by_username(text)
-            bot.send_photo(message.chat.id, user_info.profile_pic_url,
-                           f'''
-                        {EMOJI['username']} Username: {user_info.username}
-                        {EMOJI['name']} FullName: {user_info.full_name}
-                        {EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}
-                        {EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}
-                        {EMOJI['bio']} Biography: {user_info.biography}
-                        {EMOJI['post']} Posts: {user_info.media_count}
-                        {EMOJI['follower']} Followers: {user_info.follower_count:,}
-                        {EMOJI['following']} Followings: {user_info.following_count:,}
-                        {EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}
-                        #u{user_info.pk}
-                        '''.replace('                       ', '\n'), reply_markup=user_info_markup(user_info.pk))
+            caption = '\n'.join([
+                f"{EMOJI['username']} Username: {user_info.username}",
+                f"{EMOJI['name']} FullName: {user_info.full_name}",
+                f"{EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}",
+                f"{EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}",
+                f"{EMOJI['bio']} Biography: {user_info.biography}",
+                f"{EMOJI['post']} Posts: {user_info.media_count}",
+                f"{EMOJI['follower']} Followers: {user_info.follower_count:,}",
+                f"{EMOJI['following']} Followings: {user_info.following_count:,}",
+                f"{EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}",
+                f"#u{user_info.pk}"
+            ])
+            bot.send_photo(message.chat.id, user_info.profile_pic_url, caption, reply_markup=user_info_markup(user_info.pk))
     except instagrapi.exceptions.UserNotFound as e:
         bot.reply_to(message, 'User not found :(')
 
