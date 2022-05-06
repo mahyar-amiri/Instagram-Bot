@@ -1,5 +1,6 @@
 import signal
 from time import sleep
+from datetime import datetime as dt
 from decouple import config
 
 import telebot
@@ -17,6 +18,8 @@ EMOJI = {
     'username': '👤',
     'name': '🗣️',
     'bio': '📜',
+    'time': '⏰',
+    'date': '🗓️',
     'post': '🖼️',
     'follower': '👥',
     'following': '🫂',
@@ -25,6 +28,9 @@ EMOJI = {
     'verified': '✅',
     'notverified': '❎',
     'url': '🌐',
+    'like': '❤️',
+    'comment': '💬',
+    'view': '👁️‍🗨️',
     'video': '🎞️',
     'photo': '🖼️',
     'album': '🖼️🎞️',
@@ -153,10 +159,11 @@ def send_group_files(chat_id, files_list):
 
 def send_story(chat_id, story_pk):
     story = client.story_info(story_pk)
+    story_caption = f"{EMOJI['username']} {story.user.username}\n{EMOJI['date']} {dt.strftime(story.taken_at, '%A - %d %B %Y')}\n{EMOJI['time']} {dt.strftime(story.taken_at, '%H:%M')}\n\n#u{story.user.pk}"
     if story.media_type == 1:
-        bot.send_photo(chat_id, story.thumbnail_url, caption=f'#u{story.user.pk}')
+        bot.send_photo(chat_id, story.thumbnail_url, caption=story_caption)
     elif story.media_type == 2:
-        bot.send_video(chat_id, story.video_url, caption=f'#u{story.user.pk}')
+        bot.send_video(chat_id, story.video_url, caption=story_caption)
     else:
         bot.send_message(chat_id, 'FORMAT NOT FOUND!')
 
@@ -165,15 +172,18 @@ def send_media(chat_id, media_pk):
     post = client.media_info(media_pk)
 
     try:
+        post_views = f"{EMOJI['view']} {post.view_count:,}\n" if post.media_type == 2 else ''
+        post_taken_at = f"{EMOJI['date']} {dt.strftime(post.taken_at, '%A - %d %B %Y')}\n{EMOJI['time']} {dt.strftime(post.taken_at, '%H:%M')}"
+        post_caption = f"{post.caption_text}\n\n{EMOJI['username']} {post.user.username}\n{post_taken_at}\n{EMOJI['like']} {post.like_count:,}\n{EMOJI['comment']} {post.comment_count:,}\n{post_views}\n#u{post.user.pk}"
         if post.media_type == 1:
-            bot.send_photo(chat_id, post.thumbnail_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count:,}\nComments: {post.comment_count:,}\n\n#u{post.user.pk}')
+            bot.send_photo(chat_id, post.thumbnail_url, caption=post_caption)
         elif post.media_type == 2:
-            bot.send_video(chat_id, post.video_url, caption=f'{post.caption_text}\n\nLikes: {post.like_count:,}\nComments: {post.comment_count:,}\nViews: {post.view_count:,}\n\n#u{post.user.pk}')
+            bot.send_video(chat_id, post.video_url, caption=post_caption)
         elif post.media_type == 8:
 
             slides_list = []
             for slide_num, resource in enumerate(post.resources):
-                caption = f'{post.caption_text}\n\nLikes: {post.like_count:,}\nComments: {post.comment_count:,}\n\n#u{post.user.pk}' if slide_num == 0 else None
+                caption = post_caption if slide_num == 0 else None
                 if resource.media_type == 1:
                     slides_list.append(types.InputMediaPhoto(resource.thumbnail_url, caption=caption))
                 elif resource.media_type == 2:
@@ -183,6 +193,7 @@ def send_media(chat_id, media_pk):
 
         else:
             bot.send_message(chat_id, 'FORMAT NOT FOUND!')
+
     except:
         bot.send_message(chat_id, 'CAN NOT UPLOAD LARGE MEDIA!')
 
@@ -217,10 +228,11 @@ def callback_query(call):
 
         stories_list = []
         for number, story in enumerate(stories):
+            story_caption = f"{EMOJI['username']} {story.user.username}\n{EMOJI['date']} {dt.strftime(story.taken_at, '%A - %d %B %Y')}\n{EMOJI['time']} {dt.strftime(story.taken_at, '%H:%M')}\nStory Number: {number+1}\n\n#u{story.user.pk}"
             if story.media_type == 1:
-                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Story Number: {number+1}\n#u{story.user.pk}'))
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=story_caption))
             elif story.media_type == 2:
-                stories_list.append(types.InputMediaVideo(story.video_url, caption=f'Story Number: {number+1}\n#u{story.user.pk}'))
+                stories_list.append(types.InputMediaVideo(story.video_url, caption=story_caption))
             else:
                 bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
 
@@ -262,10 +274,11 @@ def callback_query(call):
 
         stories_list = []
         for number, story in enumerate(highlight.items):
+            story_caption = f"{EMOJI['username']} {story.user.username}\n{EMOJI['date']} {dt.strftime(story.taken_at, '%A - %d %B %Y')}\n{EMOJI['time']} {dt.strftime(story.taken_at, '%H:%M')}\nHighlight: {highlight.title}\nStory Number: {number+1}\n\n#u{story.user.pk}"
             if story.media_type == 1:
-                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=f'Highlight: {highlight.title}\nStory Number: {number+1}'))
+                stories_list.append(types.InputMediaPhoto(story.thumbnail_url, caption=story_caption))
             elif story.media_type == 2:
-                stories_list.append(types.InputMediaVideo(story.video_url, caption=f'Highlight: {highlight.title}\nStory Number: {number+1}'))
+                stories_list.append(types.InputMediaVideo(story.video_url, caption=story_caption))
             else:
                 bot.send_message(call.from_user.id, f'FORMAT NOT FOUND!\nHighlight: {highlight.title}\nStory Number: {number+1}')
 
@@ -277,16 +290,16 @@ def inline_query(query):
     try:
         try:
             user_info = client.user_info_by_username(query.query)
-            caption = '\n'.join([
+            caption = '\n\n'.join([
                 f"{EMOJI['username']} Username: {user_info.username}",
                 f"{EMOJI['name']} FullName: {user_info.full_name}",
                 f"{EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}",
-                f"{EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}",
+                f"{EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} {'Verified Account' if user_info.is_verified else 'Not Verified Account'}",
                 f"{EMOJI['bio']} Biography: {user_info.biography}",
-                f"{EMOJI['post']} Posts: {user_info.media_count}",
-                f"{EMOJI['follower']} Followers: {user_info.follower_count:,}",
-                f"{EMOJI['following']} Followings: {user_info.following_count:,}",
-                f"{EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}",
+                f"{EMOJI['post']} {user_info.media_count} Posts",
+                f"{EMOJI['follower']} {user_info.follower_count:,} Followers",
+                f"{EMOJI['following']} {user_info.following_count:,} Followings",
+                f"{EMOJI['url']} {user_info.external_url if user_info.external_url else ''}",
                 f"#u{user_info.pk}"
             ])
             r = types.InlineQueryResultPhoto('1', user_info.profile_pic_url, user_info.profile_pic_url, title=user_info.username, description=user_info.full_name, caption=caption,)
@@ -342,16 +355,16 @@ def answer_message(message):
         # Search for Username
         else:
             user_info = client.user_info_by_username(text)
-            caption = '\n'.join([
+            caption = '\n\n'.join([
                 f"{EMOJI['username']} Username: {user_info.username}",
                 f"{EMOJI['name']} FullName: {user_info.full_name}",
                 f"{EMOJI['private'] if user_info.is_private else EMOJI['public']}Privacy: {'Private' if user_info.is_private else 'Public'}",
-                f"{EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} Verify: {'Verified' if user_info.is_verified else 'Not Verified'}",
+                f"{EMOJI['verified'] if user_info.is_verified else EMOJI['notverified']} {'Verified Account' if user_info.is_verified else 'Not Verified Account'}",
                 f"{EMOJI['bio']} Biography: {user_info.biography}",
-                f"{EMOJI['post']} Posts: {user_info.media_count}",
-                f"{EMOJI['follower']} Followers: {user_info.follower_count:,}",
-                f"{EMOJI['following']} Followings: {user_info.following_count:,}",
-                f"{EMOJI['url']} URL: {user_info.external_url if user_info.external_url else ''}",
+                f"{EMOJI['post']} {user_info.media_count} Posts",
+                f"{EMOJI['follower']} {user_info.follower_count:,} Followers",
+                f"{EMOJI['following']} {user_info.following_count:,} Followings",
+                f"{EMOJI['url']} {user_info.external_url if user_info.external_url else ''}",
                 f"#u{user_info.pk}"
             ])
             bot.send_photo(message.chat.id, user_info.profile_pic_url, caption, reply_markup=user_info_markup(user_info.pk))
