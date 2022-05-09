@@ -1,7 +1,8 @@
 import signal
+import threading
 from time import sleep
-from datetime import datetime as dt
 from decouple import config
+from datetime import datetime as dt
 
 import telebot
 from telebot import types
@@ -372,4 +373,7 @@ def answer_message(message):
         bot.reply_to(message, 'User not found :(')
 
 
-bot.infinity_polling(skip_pending=True)
+if __name__ == '__main__':
+    threading.Thread(target=bot.infinity_polling, name='bot_infinity_polling', daemon=True).start()
+    while True:
+        pass  # CHECK FOR NEW STORIES , POSTS , DMS , ...
