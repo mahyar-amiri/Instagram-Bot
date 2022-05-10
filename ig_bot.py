@@ -13,6 +13,7 @@ from instagrapi import Client
 
 
 TOKEN = config('TOKEN')
+CHAT_ID = config('CHAT_ID')
 bot = telebot.TeleBot(TOKEN)
 
 EMOJI = {
@@ -62,10 +63,10 @@ def exit_handler(signum, frame):
         exit(1)
 
 
-signal.signal(signal.SIGINT, exit_handler)
+# signal.signal(signal.SIGINT, exit_handler)
 
 # SEND START MESSAGE
-bot.send_message(config('CHAT_ID'), f"Hello {config('IG_USERNAME')}")
+bot.send_message(CHAT_ID, f"Hello {config('IG_USERNAME')}")
 
 
 # KEYBOARD MARKUP GENERATOR
@@ -376,4 +377,12 @@ def answer_message(message):
 if __name__ == '__main__':
     threading.Thread(target=bot.infinity_polling, name='bot_infinity_polling', daemon=True).start()
     while True:
-        pass  # CHECK FOR NEW STORIES , POSTS , DMS , ...
+        try:
+            direct_thread = client.direct_threads(1, 'unread')[0]
+            direct_message = direct_thread.messages[0]
+            bot.send_message(CHAT_ID, f'*{direct_thread.users.username}* : \n{direct_message.text}\n\n#u{direct_thread.users.pk}', parse_mode='markdown')
+            client.direct_send_seen(direct_thread.id)
+            client.direct_answer(direct_thread.id, direct_message.text)
+            sleep(1)
+        except:
+            pass
