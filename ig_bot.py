@@ -380,7 +380,7 @@ if __name__ == '__main__':
         try:
             direct_thread = client.direct_threads(1, 'unread')[0]
             direct_message = direct_thread.messages[0]
-            bot.send_message(CHAT_ID, f'*{direct_thread.users.username}* : \n{direct_message.text}\n\n#u{direct_thread.users.pk}', parse_mode='markdown')
+            bot.send_message(CHAT_ID, f'*{direct_thread.users[0].username}* : \n{direct_message.text}\n\n#u{direct_thread.users[0].pk}', parse_mode='markdown')
             client.direct_send_seen(direct_thread.id)
             client.direct_answer(direct_thread.id, direct_message.text)
             sleep(1)
