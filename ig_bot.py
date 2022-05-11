@@ -1,6 +1,6 @@
 import signal
 import threading
-from time import sleep
+import time
 from decouple import config
 from datetime import datetime as dt
 
@@ -15,6 +15,9 @@ from instagrapi import Client
 TOKEN = config('TOKEN')
 CHAT_ID = config('CHAT_ID')
 bot = telebot.TeleBot(TOKEN)
+
+TIMEOUT = 60
+T_START = time.time()
 
 EMOJI = {
     'username': '👤',
@@ -152,7 +155,7 @@ def send_group_files(chat_id, files_list):
         files = files_list[start:start+count]
         try:
             bot.send_media_group(chat_id, files)
-            sleep(0.3)
+            time.sleep(0.3)
             start += count
             count = 10
         except:
@@ -378,11 +381,12 @@ if __name__ == '__main__':
     threading.Thread(target=bot.infinity_polling, name='bot_infinity_polling', daemon=True).start()
     while True:
         try:
-            direct_thread = client.direct_threads(1, 'unread')[0]
-            direct_message = direct_thread.messages[0]
-            bot.send_message(CHAT_ID, f'*{direct_thread.users[0].username}* : \n{direct_message.text}\n\n#u{direct_thread.users[0].pk}', parse_mode='markdown')
-            client.direct_send_seen(direct_thread.id)
-            client.direct_answer(direct_thread.id, direct_message.text)
-            sleep(1)
+            if time.time() - T_START > TIMEOUT:
+                direct_thread = client.direct_threads(1, 'unread')[0]
+                direct_message = direct_thread.messages[0]
+                bot.send_message(CHAT_ID, f'*{direct_thread.users[0].username}* : \n{direct_message.text}\n\n#u{direct_thread.users[0].pk}', parse_mode='markdown')
+                client.direct_send_seen(direct_thread.id)
+                client.direct_answer(direct_thread.id, direct_message.text)
+                T_START = time.time()
         except:
             pass
