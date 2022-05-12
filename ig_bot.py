@@ -1,6 +1,7 @@
-import signal
-import threading
 import time
+import signal
+import sqlite3
+import threading
 from decouple import config
 from datetime import datetime as dt
 
@@ -15,7 +16,7 @@ from instagrapi import Client
 TOKEN = config('TOKEN')
 CHAT_ID = config('CHAT_ID')
 bot = telebot.TeleBot(TOKEN)
-
+STORY_USERS = [32306727106]
 TIMEOUT = 60
 T_START = time.time()
 
@@ -67,6 +68,15 @@ def exit_handler(signum, frame):
 
 
 # signal.signal(signal.SIGINT, exit_handler)
+
+# CREATE/CONNECT TO DATABASE
+connection = sqlite3.connect(config('DB_NAME'))
+cursor = connection.cursor()
+
+# CREATE STORY TABLE
+cursor.execute('CREATE TABLE IF NOT EXISTS Story (PK INT UNIQUE);')
+# cursor.execute('CREATE TABLE IF NOT EXISTS Direct ();')
+connection.commit()
 
 # SEND START MESSAGE
 bot.send_message(CHAT_ID, f"Hello {config('IG_USERNAME')}")
@@ -201,6 +211,28 @@ def send_media(chat_id, media_pk):
 
     except:
         bot.send_message(chat_id, 'CAN NOT UPLOAD LARGE MEDIA!')
+
+
+def check_story():
+    for user in STORY_USERS:
+        stories = client.user_stories(user)
+        for story in stories:
+            story_pk = cursor.execute(f'SELECT PK FROM Story WHERE PK={story.pk};')
+            if len(story_pk) == 1:
+                continue
+            elif len(story_pk) == 0:
+                send_story(CHAT_ID, story.pk)
+                cursor.execute(f'INSERT INTO Story VALUES ({story.pk});')
+                connection.commit()
+
+
+def check_direct():
+    # DB
+    direct_thread = client.direct_threads(1, 'unread')[0]
+    direct_message = direct_thread.messages[0]
+    bot.send_message(CHAT_ID, f'*{direct_thread.users[0].username}* : \n{direct_message.text}\n\n#u{direct_thread.users[0].pk}', parse_mode='markdown')
+    client.direct_send_seen(direct_thread.id)
+    client.direct_answer(direct_thread.id, direct_message.text)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -382,11 +414,7 @@ if __name__ == '__main__':
     while True:
         try:
             if time.time() - T_START > TIMEOUT:
-                direct_thread = client.direct_threads(1, 'unread')[0]
-                direct_message = direct_thread.messages[0]
-                bot.send_message(CHAT_ID, f'*{direct_thread.users[0].username}* : \n{direct_message.text}\n\n#u{direct_thread.users[0].pk}', parse_mode='markdown')
-                client.direct_send_seen(direct_thread.id)
-                client.direct_answer(direct_thread.id, direct_message.text)
+                check_story()
                 T_START = time.time()
         except:
             pass
