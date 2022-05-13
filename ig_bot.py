@@ -224,6 +224,8 @@ def check_story():
                 send_story(CHAT_ID, story.pk)
                 cursor.execute(f'INSERT INTO Story VALUES ({story.pk});')
                 connection.commit()
+            else:
+                print('ERROR')
 
 
 def check_direct():
