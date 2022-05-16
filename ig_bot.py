@@ -67,7 +67,7 @@ def exit_handler(signum, frame):
         exit(1)
 
 
-# signal.signal(signal.SIGINT, exit_handler)
+signal.signal(signal.SIGINT, exit_handler)
 
 # CREATE/CONNECT TO DATABASE
 connection = sqlite3.connect(config('DB_NAME'))
