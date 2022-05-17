@@ -17,7 +17,9 @@ TOKEN = config('TOKEN')
 CHAT_ID = config('CHAT_ID')
 bot = telebot.TeleBot(TOKEN)
 STORY_USERS = [32306727106]
-TIMEOUT = 60
+
+# TIMER SETTINGS
+TIMEOUT = config('TIMEOUT')
 T_START = time.time()
 
 EMOJI = {
